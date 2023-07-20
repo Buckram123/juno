@@ -1,0 +1,147 @@
+name: ictest E2E
+
+on:
+  push:
+    tags:
+      - '**'
+    branches:
+      - '**'
+    paths:
+      - '**.yml'
+      - '**.go'
+      - '**.mod'
+      - '**.sum'
+
+env:
+  REGISTRY: ghcr.io  
+  IMAGE_NAME: ${{ github.repository }}-e2e
+  GO_VERSION: 1.19
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    outputs:
+      branchTag: ${{ steps.meta.outputs.version }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # We setup go & cache dependencies here. This way each child job
+      # does not have to reinstall all dependencies individually.
+      # Should ID be unique to this job only?
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+        id: go
+      
+      - name: Download dependencies
+        run: |
+          go mod download
+          cd interchaintest && go mod download
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max        
+
+      # make juno:branchname here for all needs.build-and-push-image.outputs.branchTag
+      # then upload to github. Then download for each as a cache. This way its only built once    
+
+  test-juno-basic:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-basic
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-ibc:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-ibc
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-upgrade:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-upgrade
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-tokenfactory:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-tokenfactory
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-feeshare:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-feeshare
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-ibchooks:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-ibchooks
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  # === UNITY CONTRACT ===
+  test-juno-unity-deploy:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-unity-deploy
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-unity-gov:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-unity-gov
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}
+
+  test-juno-pfm:
+    needs: build-and-push-image
+    uses: ./.github/workflows/make-cmd-runner.yml
+    with:
+      make-command: ictest-pfm
+      branch-tag: ${{needs.build-and-push-image.outputs.branchTag}}

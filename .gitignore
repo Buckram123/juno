@@ -6,6 +6,12 @@ exchanges.json
 juno_out.json
 bin
 .vscode
+.ash_history
+tmp-swagger-gen
+
+heighliner*
+
+x/**/data/wasm/*
 
 # emacs editor config
 \#*\#

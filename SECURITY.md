@@ -24,13 +24,11 @@ If it is not triaged in a couple of days, feel free to tag `@the-frey` or `@jake
 
 If you're here because you're trying to figure out how to notify us of a security issue, go to [Discord](https://discord.gg/wHdzjS5vXx), and alert the core engineers:
 
-
 - Jake (Meow) `Meow Stargaze ✨🔭#1736`
-- Dimi `dimi 🦙#2998`
-- Alex (the-frey) `the-frey#8626`
-- Ben2x4 `Ben2x4#4071`
-- Jacob `jacobgadikian#9883`
-- Giansalex `giansalex#1825`
+- Dimi `dimiandre`
+- Alex (the-frey) `.thefrey`
+- Giansalex `giansalex`
+- Reece `reecepbcups`
 
 Please avoid opening public issues on GitHub that contain information about a potential security vulnerability as this makes it difficult to reduce the impact and harm of valid security issues.
 

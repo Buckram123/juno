@@ -3,25 +3,20 @@ package main
 import (
 	"os"
 
-	"github.com/CosmosContracts/juno/v9/app"
+	"cosmossdk.io/log"
+
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
+
+	"github.com/CosmosContracts/juno/v16/app"
+	"github.com/CosmosContracts/juno/v16/cmd/junod/cmd"
 )
 
 func main() {
-	cmdOptions := GetWasmCmdOptions()
-	rootCmd, _ := cosmoscmd.NewRootCmd(
-		app.Name,
-		app.AccountAddressPrefix,
-		app.DefaultNodeHome,
-		app.Name,
-		app.ModuleBasics,
-		app.New,
-		// this line is used by starport scaffolding # root/arguments
-		cmdOptions...,
-	)
+	app.SetAddressPrefixes()
+	rootCmd, _ := cmd.NewRootCmd()
 
-	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, "JUNOD", app.DefaultNodeHome); err != nil {
+		log.NewLogger(rootCmd.OutOrStderr()).Error("failure when running app", "err", err)
 		os.Exit(1)
 	}
 }

@@ -1,3 +1,4 @@
+---
 version: "3"
 services:
   node:
@@ -12,5 +13,6 @@ services:
       - 26657:26657 # rpc
       - 9090:9090 #grpc
     environment:
-      - GAS_LIMIT=${GAS_LIMIT:-100000000}
-      - STAKE_TOKEN=${STAKE_TOKEN:-ustake}
+      - GAS_LIMIT=${GAS_LIMIT:-10000000}
+      - STAKE_TOKEN=${STAKE_TOKEN:-ujunox}
+      - TIMEOUT_COMMIT=${TIMEOUT_COMMIT:-5s}

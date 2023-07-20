@@ -3,17 +3,20 @@ package types
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // NewMinter returns a new Minter object with the given inflation and annual
 // provisions values.
-func NewMinter(inflation, annualProvisions sdk.Dec, phase, startPhaseBlock uint64) Minter {
+func NewMinter(inflation, annualProvisions sdk.Dec, phase, startPhaseBlock uint64, targetSupply math.Int) Minter {
 	return Minter{
 		Inflation:        inflation,
 		AnnualProvisions: annualProvisions,
 		Phase:            phase,
 		StartPhaseBlock:  startPhaseBlock,
+		TargetSupply:     targetSupply,
 	}
 }
 
@@ -24,6 +27,7 @@ func InitialMinter(inflation sdk.Dec) Minter {
 		sdk.NewDec(0),
 		0,
 		0,
+		sdk.NewInt(0),
 	)
 }
 
@@ -70,14 +74,13 @@ func (m Minter) PhaseInflationRate(phase uint64) sdk.Dec {
 }
 
 // NextPhase returns the new phase.
-func (m Minter) NextPhase(params Params, currentBlock uint64) uint64 {
+func (m Minter) NextPhase(_ Params, currentSupply math.Int) uint64 {
 	nonePhase := m.Phase == 0
 	if nonePhase {
 		return 1
 	}
 
-	blockNewPhase := m.StartPhaseBlock + params.BlocksPerYear
-	if blockNewPhase > currentBlock {
+	if currentSupply.LT(m.TargetSupply) {
 		return m.Phase
 	}
 
@@ -86,13 +89,20 @@ func (m Minter) NextPhase(params Params, currentBlock uint64) uint64 {
 
 // NextAnnualProvisions returns the annual provisions based on current total
 // supply and inflation rate.
-func (m Minter) NextAnnualProvisions(_ Params, totalSupply sdk.Int) sdk.Dec {
+func (m Minter) NextAnnualProvisions(_ Params, totalSupply math.Int) sdk.Dec {
 	return m.Inflation.MulInt(totalSupply)
 }
 
 // BlockProvision returns the provisions for a block based on the annual
 // provisions rate.
-func (m Minter) BlockProvision(params Params) sdk.Coin {
+func (m Minter) BlockProvision(params Params, totalSupply math.Int) sdk.Coin {
 	provisionAmt := m.AnnualProvisions.QuoInt(sdk.NewInt(int64(params.BlocksPerYear)))
+
+	// Because of rounding, we might mint too many tokens in this phase, let's limit it
+	futureSupply := totalSupply.Add(provisionAmt.TruncateInt())
+	if futureSupply.GT(m.TargetSupply) {
+		return sdk.NewCoin(params.MintDenom, m.TargetSupply.Sub(totalSupply))
+	}
+
 	return sdk.NewCoin(params.MintDenom, provisionAmt.TruncateInt())
 }

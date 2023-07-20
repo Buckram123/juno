@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/CosmosContracts/juno/v9/x/mint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+
+	"github.com/CosmosContracts/juno/v16/x/mint/types"
 )
 
 // Simulation parameter constants
@@ -23,8 +24,8 @@ func GenInflation(r *rand.Rand) sdk.Dec {
 }
 
 // GenBlocksPerYear randomized BlocksPerYear
-func GenBlocksPerYear(r *rand.Rand) sdk.Dec {
-	return sdk.NewDec(60 * 60 * 8766 / 5)
+func GenBlocksPerYear(_ *rand.Rand) uint64 {
+	return uint64(60 * 60 * 8766 / 5)
 }
 
 // RandomizedGenState generates a random GenesisState for mint
